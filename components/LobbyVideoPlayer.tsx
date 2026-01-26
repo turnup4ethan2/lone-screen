@@ -167,7 +167,7 @@ export default function LobbyVideoPlayer({
   
   // Log video ID details for debugging
   useEffect(() => {
-    if (showVideo) {
+    if (showVideo && currentVideoId) {
       console.log('🎬 VIDEO PLAYER ACTIVE:', {
         videoId: currentVideoId,
         isLiveStream: currentVideoId.includes('-live-'),
