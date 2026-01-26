@@ -75,9 +75,11 @@ export default async function ForumPage({
   // Get upcoming premiere for timer
   const upcomingPremiere = await getUpcomingPremiere()
   const upcomingPremiereDate = upcomingPremiere?.premiere_date
-  const lobbyOpenTime = upcomingPremiereDate
-    ? new Date(new Date(upcomingPremiereDate).getTime() - 15 * 60 * 1000).toISOString()
-    : undefined
+  
+  // Calculate if lobby is open (15 minutes before premiere)
+  const isLobbyOpen = upcomingPremiereDate
+    ? new Date() >= new Date(new Date(upcomingPremiereDate).getTime() - 15 * 60 * 1000)
+    : false
 
   // Format year, runtime, genre
   const year = premiereDate.getFullYear()
@@ -90,7 +92,7 @@ export default async function ForumPage({
         {/* Top Left Timer */}
         {upcomingPremiereDate && (
           <div className="mb-6">
-            <TopLeftTimer targetDate={upcomingPremiereDate} lobbyOpenTime={lobbyOpenTime} />
+            <TopLeftTimer targetDate={upcomingPremiereDate} isLobbyOpen={isLobbyOpen} />
           </div>
         )}
 

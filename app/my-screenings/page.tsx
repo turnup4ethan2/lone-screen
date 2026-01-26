@@ -90,9 +90,11 @@ export default async function MyScreeningsPage() {
   // Get upcoming premiere for timer
   const upcomingPremiere = await getUpcomingPremiere()
   const premiereDate = upcomingPremiere?.premiere_date
-  const lobbyOpenTime = premiereDate
-    ? new Date(new Date(premiereDate).getTime() - 15 * 60 * 1000).toISOString()
-    : undefined
+  
+  // Calculate if lobby is open (15 minutes before premiere)
+  const isLobbyOpen = premiereDate
+    ? new Date() >= new Date(new Date(premiereDate).getTime() - 15 * 60 * 1000)
+    : false
 
   return (
     <div className="min-h-screen bg-[#F2F0EA]">
@@ -100,7 +102,7 @@ export default async function MyScreeningsPage() {
         {/* Top Left Timer */}
         {premiereDate && (
           <div className="mb-6">
-            <TopLeftTimer targetDate={premiereDate} lobbyOpenTime={lobbyOpenTime} />
+            <TopLeftTimer targetDate={premiereDate} isLobbyOpen={isLobbyOpen} />
           </div>
         )}
 

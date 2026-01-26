@@ -5,9 +5,11 @@ import { getUpcomingPremiere } from '@/lib/premieres'
 export default async function PrivacyPage() {
   const upcomingPremiere = await getUpcomingPremiere()
   const upcomingPremiereDate = upcomingPremiere?.premiere_date
-  const lobbyOpenTime = upcomingPremiereDate
-    ? new Date(new Date(upcomingPremiereDate).getTime() - 15 * 60 * 1000).toISOString()
-    : undefined
+  
+  // Calculate if lobby is open (15 minutes before premiere)
+  const isLobbyOpen = upcomingPremiereDate
+    ? new Date() >= new Date(new Date(upcomingPremiereDate).getTime() - 15 * 60 * 1000)
+    : false
 
   return (
     <div className="min-h-screen bg-[#F2F0EA]">
@@ -15,7 +17,7 @@ export default async function PrivacyPage() {
         {/* Top Left Timer */}
         {upcomingPremiereDate && (
           <div className="mb-6">
-            <TopLeftTimer targetDate={upcomingPremiereDate} lobbyOpenTime={lobbyOpenTime} />
+            <TopLeftTimer targetDate={upcomingPremiereDate} isLobbyOpen={isLobbyOpen} />
           </div>
         )}
 
