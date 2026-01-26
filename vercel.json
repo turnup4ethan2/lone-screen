@@ -1,0 +1,9 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/premiere-reminders",
+      "schedule": "*/10 * * * *"
+    }
+  ]
+}
+
