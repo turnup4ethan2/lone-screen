@@ -183,7 +183,10 @@ export default function PremiereForm({ premiere, films }: PremiereFormProps) {
           id="status"
           required
           value={formData.status}
-          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+          onChange={(e) => {
+            const value = e.target.value as 'upcoming' | 'live' | 'completed'
+            setFormData({ ...formData, status: value })
+          }}
           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
           <option value="upcoming">Upcoming</option>
