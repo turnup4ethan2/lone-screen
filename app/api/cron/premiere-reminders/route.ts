@@ -7,9 +7,13 @@ import { sendPremiereReminderEmail } from '@/lib/email/send'
 // {
 //   "crons": [{
 //     "path": "/api/cron/premiere-reminders",
-//     "schedule": "*/10 * * * *"
+//     "schedule": "0 9 * * *"  // Runs once daily at 9:00 AM UTC (Vercel Hobby plan limit)
 //   }]
 // }
+// 
+// Note: Due to Vercel Hobby plan limitations (daily cron jobs only),
+// this runs once per day and checks for premieres happening in the next 24 hours.
+// For more frequent reminders, consider upgrading to Vercel Pro or using an external cron service.
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,33 +31,49 @@ export async function GET(request: NextRequest) {
     const now = new Date()
 
     // Find premieres that need reminders:
-    // 1. 1 hour before (60-70 minutes before)
-    // 2. 10 minutes before (10-20 minutes before)
+    // Since we can only run once per day (Vercel Hobby plan), we check for premieres
+    // happening in the next 24 hours and send appropriate reminders based on timing
     
-    const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000)
-    const oneHourMinus = new Date(now.getTime() + 50 * 60 * 1000) // 50 minutes from now
-    const tenMinFromNow = new Date(now.getTime() + 10 * 60 * 1000)
-    const tenMinMinus = new Date(now.getTime() + 5 * 60 * 1000) // 5 minutes from now
-
-    // Get premieres in 1-hour window (50-60 minutes from now)
-    const { data: oneHourPremieres } = await supabase
+    // Check for premieres happening in the next 24 hours
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+    
+    // Get all premieres happening in the next 24 hours
+    const { data: upcomingPremieres } = await supabase
       .from('premieres')
       .select(`
         *,
         film:films(*)
       `)
-      .gte('premiere_date', oneHourMinus.toISOString())
-      .lte('premiere_date', oneHourFromNow.toISOString())
+      .gte('premiere_date', now.toISOString())
+      .lte('premiere_date', tomorrow.toISOString())
+      .eq('status', 'upcoming')
 
-    // Get premieres in 10-minute window (5-10 minutes from now)
-    const { data: tenMinPremieres } = await supabase
-      .from('premieres')
-      .select(`
-        *,
-        film:films(*)
-      `)
-      .gte('premiere_date', tenMinMinus.toISOString())
-      .lte('premiere_date', tenMinFromNow.toISOString())
+    if (!upcomingPremieres || upcomingPremieres.length === 0) {
+      return NextResponse.json({
+        success: true,
+        emailsSent: 0,
+        message: 'No premieres in the next 24 hours',
+      })
+    }
+
+    // Separate premieres by reminder timing
+    const oneHourPremieres: typeof upcomingPremieres = []
+    const tenMinPremieres: typeof upcomingPremieres = []
+
+    for (const premiere of upcomingPremieres) {
+      const premiereDate = new Date(premiere.premiere_date)
+      const minutesUntilPremiere = (premiereDate.getTime() - now.getTime()) / (1000 * 60)
+
+      // 1-hour reminder: 50-70 minutes before
+      if (minutesUntilPremiere >= 50 && minutesUntilPremiere <= 70) {
+        oneHourPremieres.push(premiere)
+      }
+      
+      // 10-minute reminder: 5-15 minutes before
+      if (minutesUntilPremiere >= 5 && minutesUntilPremiere <= 15) {
+        tenMinPremieres.push(premiere)
+      }
+    }
 
     let emailsSent = 0
     const errors: string[] = []

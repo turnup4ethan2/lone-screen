@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/premiere-reminders",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 9 * * *"
     }
   ]
 }
