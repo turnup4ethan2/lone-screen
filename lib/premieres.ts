@@ -4,12 +4,8 @@ import type { Premiere } from '@/types/database'
 export async function getUpcomingPremiere(): Promise<Premiere | null> {
   const supabase = await createClient()
   const now = new Date()
-  const oneMinuteAgo = new Date(now.getTime() - 1 * 60 * 1000).toISOString()
-
-  // Get premieres that are:
-  // 1. In the future (upcoming)
-  // 2. OR currently happening (started within last 1 minute)
-  // This allows viewing during active premieres but hides old ones quickly
+  
+  // Get upcoming or live premieres ordered by start time
   const { data, error } = await supabase
     .from('premieres')
     .select(`
@@ -17,24 +13,40 @@ export async function getUpcomingPremiere(): Promise<Premiere | null> {
       film:films(*)
     `)
     .in('status', ['upcoming', 'live'])
-    .gte('premiere_date', oneMinuteAgo) // Started within last 1 minute OR in future
     .order('premiere_date', { ascending: true })
-    .limit(1)
-    .maybeSingle()
+    .limit(5)
 
-  if (error || !data) {
+  if (error || !data || data.length === 0) {
     return null
   }
   
-  // Additional check: if premiere is more than 1 minute old, don't show it
-  const premiereDate = new Date(data.premiere_date)
-  const minutesSincePremiere = (now.getTime() - premiereDate.getTime()) / (1000 * 60)
-  
-  if (minutesSincePremiere > 1) {
-    return null
+  // Find the first premiere that is either:
+  // - In the future, or
+  // - Currently in progress (between start and end time, based on livestream duration)
+  for (const premiere of data as Premiere[]) {
+    const premiereDate = new Date(premiere.premiere_date)
+
+    // Calculate livestream end time based on configured duration
+    const hours = premiere.livestream_duration_hours ?? 0
+    const minutes = premiere.livestream_duration_minutes ?? 0
+    const seconds = premiere.livestream_duration_seconds ?? 0
+    let totalSeconds = hours * 3600 + minutes * 60 + seconds
+
+    // Sensible default if duration not set
+    if (totalSeconds <= 0) {
+      totalSeconds = 2 * 60 * 60 // 2 hours
+    }
+
+    const endTime = new Date(premiereDate.getTime() + totalSeconds * 1000)
+
+    // Show premiere if it hasn't finished yet
+    if (now <= endTime) {
+      return premiere
+    }
   }
-  
-  return data as Premiere
+
+  // No active or upcoming premieres
+  return null
 }
 
 export async function getUserTicket(premiereId: string, userId: string) {

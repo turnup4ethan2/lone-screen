@@ -36,8 +36,15 @@ export default async function HomePage() {
   const film = premiere.film as any
   const premiereDate = new Date(premiere.premiere_date)
   const now = new Date()
+  const durationSeconds =
+    (premiere.livestream_duration_hours || 0) * 3600 +
+    (premiere.livestream_duration_minutes || 0) * 60 +
+    (premiere.livestream_duration_seconds || 0)
+  const effectiveDurationSeconds = durationSeconds > 0 ? durationSeconds : 2 * 60 * 60 // default 2 hours
+  const streamEndTime = new Date(premiereDate.getTime() + effectiveDurationSeconds * 1000)
   const lobbyOpenTime = new Date(premiereDate.getTime() - 15 * 60 * 1000) // 15 minutes before premiere
-  const isLobbyOpen = now >= lobbyOpenTime
+  const isLobbyOpen = now >= lobbyOpenTime && now < streamEndTime
+  const isLivestreamInProgress = now >= premiereDate && now < streamEndTime
   const isSoldOut = !ticketAvailability.available
   const hasTicket = !!userTicket
   // Show yellow card only when user has ticket AND lobby is open
@@ -177,12 +184,16 @@ export default async function HomePage() {
                 {showYellowCard && (
                   <div className="mb-4">
                     <p className="text-[14px] text-[#000000] mb-4 font-bold" style={{ fontFamily: 'Spline Sans Mono, monospace', lineHeight: '20px', letterSpacing: '-4%' }}>
-                      THE PREMIERE WILL START IN UNDER 15 MINUTES, AND THE LOBBY IS ALREADY OPEN!
+                      {isLivestreamInProgress
+                        ? 'THE SCREENING IS IN PROGRESS, CLICK BELOW TO JOIN!'
+                        : 'THE PREMIERE WILL START IN UNDER 15 MINUTES, AND THE LOBBY IS ALREADY OPEN!'}
                     </p>
-                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-dashed border-[#000000] border-opacity-30">
-                      <span className="text-[12px] text-[#000000] uppercase tracking-tight" style={{ fontFamily: 'Spline Sans Mono, monospace', lineHeight: '16px', letterSpacing: '-4%' }}>FILM STARTS IN</span>
-                      <CountdownTimer targetDate={premiere.premiere_date} variant="dark" />
-                    </div>
+                    {!isLivestreamInProgress && (
+                      <div className="flex items-center justify-between pb-3 mb-3 border-b border-dashed border-[#000000] border-opacity-30">
+                        <span className="text-[12px] text-[#000000] uppercase tracking-tight" style={{ fontFamily: 'Spline Sans Mono, monospace', lineHeight: '16px', letterSpacing: '-4%' }}>FILM STARTS IN</span>
+                        <CountdownTimer targetDate={premiere.premiere_date} variant="dark" />
+                      </div>
+                    )}
                   </div>
                 )}
 
