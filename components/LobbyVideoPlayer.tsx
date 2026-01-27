@@ -30,7 +30,7 @@ export default function LobbyVideoPlayer({
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null)
   const [isLoadingVideoId, setIsLoadingVideoId] = useState(false)
   const hasFetchedRef = useRef(false) // Track if we've already fetched
-  const START_THRESHOLD_MS = 2000 // treat within 2s of start as started
+  const START_THRESHOLD_MS = 0 // only treat as started at or after exact start time
   
   // Calculate total duration in seconds
   const totalDurationSeconds = (livestreamDurationHours * 3600) + 
