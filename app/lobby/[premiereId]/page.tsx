@@ -4,11 +4,10 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import DacastPlayer from '@/components/DacastPlayer'
 import LobbyVideoPlayer from '@/components/LobbyVideoPlayer'
 import LobbyCountdownTimer from '@/components/LobbyCountdownTimer'
-import { format } from 'date-fns'
 import ShareButton from '@/components/ShareButton'
+import LocalTime from '@/components/LocalTime'
 
 export default async function LobbyPage({
   params,
@@ -61,6 +60,7 @@ export default async function LobbyPage({
     (premiere.livestream_duration_minutes || 0) * 60 * 1000 +
     (premiere.livestream_duration_seconds || 0) * 1000
   )
+  const endTimeIso = endTime.toISOString()
 
   // Get video ID - use countdown before premiere, main film after
   const testVideoId = process.env.NEXT_PUBLIC_DACAST_TEST_VIDEO_ID || 'a1266caa-34d1-40f2-99f5-fa5fdc6926fa'
@@ -163,7 +163,8 @@ export default async function LobbyPage({
                   className="text-[16px] font-bold text-[#FFFFFF]"
                   style={{ fontFamily: 'Spline Sans Mono, monospace', lineHeight: '28px', letterSpacing: '-4%' }}
                 >
-                  {format(premiereDate, 'h:mm a')} - {format(endTime, 'h:mm a')}
+                  <LocalTime isoString={premiere.premiere_date} formatString="h:mm a" /> -{' '}
+                  <LocalTime isoString={endTimeIso} formatString="h:mm a" />
                 </p>
               </div>
 
