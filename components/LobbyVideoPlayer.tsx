@@ -110,15 +110,18 @@ export default function LobbyVideoPlayer({
             `(${livestreamDurationHours}h ${livestreamDurationMinutes}m ${livestreamDurationSeconds}s = ${totalDurationSeconds} seconds)`)
         }
       } else {
-        // Still counting down
+        // Still counting down - compute HH:MM:SS (Figma-style)
         setShowVideo(false)
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000)
-        if (minutes > 0) {
-          setTimeRemaining(`${minutes}m ${seconds}s`)
-        } else {
-          setTimeRemaining(`${seconds}s`)
-        }
+        const totalSeconds = Math.max(0, Math.floor(distance / 1000))
+        const hours = Math.floor(totalSeconds / 3600)
+        const minutes = Math.floor((totalSeconds % 3600) / 60)
+        const seconds = totalSeconds % 60
+        const formatted = [
+          hours.toString().padStart(2, '0'),
+          minutes.toString().padStart(2, '0'),
+          seconds.toString().padStart(2, '0'),
+        ].join(':')
+        setTimeRemaining(formatted)
       }
     }
 
@@ -197,14 +200,33 @@ export default function LobbyVideoPlayer({
   }, [showVideo, currentVideoId])
 
   if (!showVideo) {
+    // Figma-style countdown overlay
     return (
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center text-white py-12">
-          <p className="text-xl mb-4">Premiere starts in</p>
-          <p className="text-3xl font-bold text-white mb-4" key={timeRemaining}>
-            {timeRemaining || 'Checking...'}
+      <div className="flex items-center justify-center w-full h-full">
+        <div className="text-center text-white">
+          <p
+            className="text-[36px] font-bold mb-4"
+            style={{
+              fontFamily: 'Instrument Sans, sans-serif',
+              fontWeight: 800,
+              letterSpacing: '-2px',
+              lineHeight: '44px',
+            }}
+          >
+            The film starts
           </p>
-          <p className="text-lg text-gray-400">
+          <div
+            className="text-[48px] font-bold italic"
+            style={{
+              fontFamily: 'Spline Sans Mono, monospace',
+              fontWeight: 700,
+              letterSpacing: '-4%',
+              lineHeight: '56px',
+            }}
+          >
+            in {timeRemaining || '00:00:00'}
+          </div>
+          <p className="mt-6 text-[16px] text-gray-400" style={{ fontFamily: 'Spline Sans Mono, monospace' }}>
             The premiere will begin automatically at the scheduled time.
           </p>
         </div>
