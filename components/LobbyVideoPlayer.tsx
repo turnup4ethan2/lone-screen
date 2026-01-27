@@ -30,6 +30,7 @@ export default function LobbyVideoPlayer({
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null)
   const [isLoadingVideoId, setIsLoadingVideoId] = useState(false)
   const hasFetchedRef = useRef(false) // Track if we've already fetched
+  const START_THRESHOLD_MS = 2000 // treat within 2s of start as started
   
   // Calculate total duration in seconds
   const totalDurationSeconds = (livestreamDurationHours * 3600) + 
@@ -91,7 +92,8 @@ export default function LobbyVideoPlayer({
         showVideo
       })
 
-      if (distance <= 0) {
+      // If we're within a small threshold of the premiere time, treat it as started
+      if (distance <= START_THRESHOLD_MS) {
         // Premiere has started - fetch the latest video ID and show video
         console.log('Premiere has started - fetching latest video ID')
         setTimeRemaining('')
@@ -123,7 +125,7 @@ export default function LobbyVideoPlayer({
     // Check immediately on mount
     const now = new Date()
     const premiere = new Date(premiereDate)
-    if (now >= premiere) {
+    if (now.getTime() >= premiere.getTime() - START_THRESHOLD_MS) {
       console.log('Premiere already started on mount - fetching video ID')
       setTimeRemaining('')
       // Fetch video ID immediately
