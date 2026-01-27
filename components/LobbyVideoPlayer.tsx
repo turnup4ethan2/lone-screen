@@ -146,6 +146,22 @@ export default function LobbyVideoPlayer({
     return () => clearInterval(interval)
   }, [premiereDate, totalDurationSeconds, streamEndTime, livestreamDurationHours, livestreamDurationMinutes, livestreamDurationSeconds, fetchLatestVideoId])
 
+  // Safety net: if we've passed the premiere time and still aren't showing video,
+  // make sure we trigger a fetch. This covers cases where timers are throttled
+  // (e.g. tab in background) and prevents getting stuck at 00:00 until refresh.
+  useEffect(() => {
+    if (showVideo || isLoadingVideoId || hasFetchedRef.current) return
+
+    const now = new Date()
+    const premiere = new Date(premiereDate)
+    const distance = premiere.getTime() - now.getTime()
+
+    if (distance <= START_THRESHOLD_MS) {
+      console.log('Safety net: premiere should have started, forcing video ID fetch')
+      fetchLatestVideoId()
+    }
+  }, [showVideo, isLoadingVideoId, premiereDate, fetchLatestVideoId])
+
   // Check if stream has ended and redirect to rating page
   useEffect(() => {
     if (!streamEndTime) return
