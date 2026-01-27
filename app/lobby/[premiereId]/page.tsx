@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import LobbyVideoPlayer from '@/components/LobbyVideoPlayer'
-import LobbyCountdownTimer from '@/components/LobbyCountdownTimer'
 import ShareButton from '@/components/ShareButton'
 import LocalTime from '@/components/LocalTime'
 
@@ -45,11 +44,10 @@ export default async function LobbyPage({
   const film = premiere.film as any
   const premiereDate = new Date(premiere.premiere_date)
   const now = new Date()
-  const isPremiereTime = now >= premiereDate
   const lobbyOpenTime = new Date(premiereDate.getTime() - 15 * 60 * 1000) // 15 minutes before
   const isLobbyOpen = now >= lobbyOpenTime
 
-  // Redirect to home if lobby is not open yet
+  // Redirect to home if lobby is not open yet (server-side gate)
   if (!isLobbyOpen) {
     redirect('/?lobbyClosed=true')
   }
@@ -64,9 +62,9 @@ export default async function LobbyPage({
 
   // Get video ID - use countdown before premiere, main film after
   const testVideoId = process.env.NEXT_PUBLIC_DACAST_TEST_VIDEO_ID || 'a1266caa-34d1-40f2-99f5-fa5fdc6926fa'
-  const videoId = isPremiereTime
-    ? (film.dacast_video_id || testVideoId)
-    : (film.dacast_countdown_video_id || testVideoId)
+  // Initial video ID (may be countdown or main video). LobbyVideoPlayer
+  // will fetch the latest correct ID when the premiere starts.
+  const videoId = film.dacast_countdown_video_id || film.dacast_video_id || testVideoId
 
   return (
     <div className="min-h-screen bg-[#000000] flex">
@@ -223,50 +221,18 @@ export default async function LobbyPage({
             </div>
           )}
 
-          {/* Countdown Timer Overlay */}
-          {!isPremiereTime && (
-            <div className="absolute inset-0 flex items-center justify-center z-10">
-              <div className="text-center text-[#FFFFFF]">
-                <p
-                  className="text-[36px] font-bold mb-4"
-                  style={{
-                    fontFamily: 'Instrument Sans, sans-serif',
-                    fontWeight: 800,
-                    letterSpacing: '-2px',
-                    lineHeight: '44px',
-                  }}
-                >
-                  The film starts
-                </p>
-                <div
-                  className="text-[48px] font-bold italic"
-                  style={{
-                    fontFamily: 'Spline Sans Mono, monospace',
-                    fontWeight: 700,
-                    letterSpacing: '-4%',
-                    lineHeight: '56px',
-                  }}
-                >
-                  in <LobbyCountdownTimer targetDate={premiere.premiere_date} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Video Player (when premiere starts) */}
-          {isPremiereTime && (
-            <div className="absolute inset-0">
-              <LobbyVideoPlayer 
-                videoId={videoId} 
-                premiereDate={premiere.premiere_date}
-                premiereId={premiere.id}
-                filmId={film.id}
-                livestreamDurationHours={premiere.livestream_duration_hours || 0}
-                livestreamDurationMinutes={premiere.livestream_duration_minutes || 0}
-                livestreamDurationSeconds={premiere.livestream_duration_seconds || 0}
-              />
-            </div>
-          )}
+        {/* Video Player + internal countdown */}
+        <div className="absolute inset-0">
+          <LobbyVideoPlayer 
+            videoId={videoId} 
+            premiereDate={premiere.premiere_date}
+            premiereId={premiere.id}
+            filmId={film.id}
+            livestreamDurationHours={premiere.livestream_duration_hours || 0}
+            livestreamDurationMinutes={premiere.livestream_duration_minutes || 0}
+            livestreamDurationSeconds={premiere.livestream_duration_seconds || 0}
+          />
+        </div>
         </div>
       </main>
     </div>
