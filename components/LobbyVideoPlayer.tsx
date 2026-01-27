@@ -30,7 +30,6 @@ export default function LobbyVideoPlayer({
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null)
   const [isLoadingVideoId, setIsLoadingVideoId] = useState(false)
   const hasFetchedRef = useRef(false) // Track if we've already fetched
-  const hasReloadedRef = useRef(false) // Ensure we only auto-reload once if needed
   const START_THRESHOLD_MS = 2000 // treat within 2s of start as started
   
   // Calculate total duration in seconds
@@ -166,24 +165,31 @@ export default function LobbyVideoPlayer({
     }
   }, [showVideo, isLoadingVideoId, premiereDate, fetchLatestVideoId])
 
-  // Last-resort safety: if the premiere time has passed and we still aren't
-  // showing the video after all our fetch attempts, automatically reload
-  // the page once. This matches the behavior you've seen manually (refresh
-  // fixes it) but makes it automatic for the user.
+  // Last-resort safety: if we've already tried fetching the video ID and
+  // still don't see the video after a short grace period, reload ONCE.
+  // Uses sessionStorage with the premiereId key to avoid infinite loops.
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (hasReloadedRef.current) return
+    if (!hasFetchedRef.current) return
+    if (showVideo) return
 
-    const now = new Date()
+    const storageKey = `lobbyReloaded-${premiereId}`
+    if (window.sessionStorage.getItem(storageKey) === '1') return
+
     const premiere = new Date(premiereDate)
 
-    // If we're past the premiere time and still not showing video, reload once
-    if (now >= premiere && !showVideo) {
-      hasReloadedRef.current = true
-      console.log('Safety reload: premiere started but video not visible, reloading page')
-      window.location.reload()
-    }
-  }, [showVideo, premiereDate])
+    // Wait 10 seconds after fetch attempt before deciding to reload
+    const timeout = window.setTimeout(() => {
+      const now = new Date()
+      if (!showVideo && now >= premiere) {
+        console.log('Safety reload: premiere started, fetch attempted, video not visible. Reloading once.')
+        window.sessionStorage.setItem(storageKey, '1')
+        window.location.reload()
+      }
+    }, 10000)
+
+    return () => window.clearTimeout(timeout)
+  }, [showVideo, premiereDate, premiereId])
 
   // Check if stream has ended and redirect to rating page
   useEffect(() => {
