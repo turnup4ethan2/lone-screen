@@ -92,23 +92,21 @@ export default function LobbyVideoPlayer({
         showVideo
       })
 
-      // If we're within a small threshold of the premiere time, treat it as started
-      if (distance <= START_THRESHOLD_MS) {
-        // Premiere has started - fetch the latest video ID and show video
-        console.log('Premiere has started - fetching latest video ID')
-        setTimeRemaining('')
-        
-        // Fetch the latest video ID when countdown finishes
-        fetchLatestVideoId()
-        
-        // Calculate stream end time if duration is provided
-        if (totalDurationSeconds > 0 && !streamEndTime) {
-          const premiere = new Date(premiereDate)
-          const endTime = new Date(premiere.getTime() + totalDurationSeconds * 1000) // Convert seconds to milliseconds
-          setStreamEndTime(endTime)
-          console.log('Stream will end at:', endTime.toISOString(), 
-            `(${livestreamDurationHours}h ${livestreamDurationMinutes}m ${livestreamDurationSeconds}s = ${totalDurationSeconds} seconds)`)
+      // If we've reached (or just passed) the premiere time WHILE WE'VE BEEN SHOWING
+      // the countdown, just reload once so the server-side lobby can render the
+      // correct livestream, as requested.
+      if (distance <= START_THRESHOLD_MS && !hasFetchedRef.current) {
+        console.log('Countdown reached premiere time - reloading lobby page once')
+        if (typeof window !== 'undefined') {
+          const storageKey = `lobbyReloaded-${premiereId}`
+          if (window.sessionStorage.getItem(storageKey) !== '1') {
+            window.sessionStorage.setItem(storageKey, '1')
+            window.location.reload()
+            return
+          }
         }
+        // If we've already reloaded once for this premiere, just freeze the timer
+        setTimeRemaining('00:00:00')
       } else {
         // Still counting down - compute HH:MM:SS (Figma-style)
         setShowVideo(false)
@@ -149,47 +147,11 @@ export default function LobbyVideoPlayer({
     return () => clearInterval(interval)
   }, [premiereDate, totalDurationSeconds, streamEndTime, livestreamDurationHours, livestreamDurationMinutes, livestreamDurationSeconds, fetchLatestVideoId])
 
-  // Safety net: if we've passed the premiere time and still aren't showing video,
-  // make sure we trigger a fetch. This covers cases where timers are throttled
-  // (e.g. tab in background) and prevents getting stuck at 00:00 until refresh.
-  useEffect(() => {
-    if (showVideo || isLoadingVideoId || hasFetchedRef.current) return
-
-    const now = new Date()
-    const premiere = new Date(premiereDate)
-    const distance = premiere.getTime() - now.getTime()
-
-    if (distance <= START_THRESHOLD_MS) {
-      console.log('Safety net: premiere should have started, forcing video ID fetch')
-      fetchLatestVideoId()
-    }
-  }, [showVideo, isLoadingVideoId, premiereDate, fetchLatestVideoId])
-
-  // Last-resort safety: if we've already tried fetching the video ID and
-  // still don't see the video after a short grace period, reload ONCE.
-  // Uses sessionStorage with the premiereId key to avoid infinite loops.
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (!hasFetchedRef.current) return
-    if (showVideo) return
-
-    const storageKey = `lobbyReloaded-${premiereId}`
-    if (window.sessionStorage.getItem(storageKey) === '1') return
-
-    const premiere = new Date(premiereDate)
-
-    // Wait 10 seconds after fetch attempt before deciding to reload
-    const timeout = window.setTimeout(() => {
-      const now = new Date()
-      if (!showVideo && now >= premiere) {
-        console.log('Safety reload: premiere started, fetch attempted, video not visible. Reloading once.')
-        window.sessionStorage.setItem(storageKey, '1')
-        window.location.reload()
-      }
-    }, 10000)
-
-    return () => window.clearTimeout(timeout)
-  }, [showVideo, premiereDate, premiereId])
+  // NOTE: We intentionally do NOT add more safety nets here. As requested,
+  // when the countdown reaches 00:00 we simply reload the page once via
+  // the logic in checkTime() above. If a user lands after the premiere
+  // has already started, the \"already started\" branch on mount will fetch
+  // the video ID without reloading.
 
   // Check if stream has ended and redirect to rating page
   useEffect(() => {
