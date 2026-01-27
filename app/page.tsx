@@ -7,6 +7,7 @@ import GetTicketButton from '@/components/GetTicketButton'
 import AddToCalendar from '@/components/AddToCalendar'
 import { format } from 'date-fns'
 import Image from 'next/image'
+import LocalTime from '@/components/LocalTime'
 
 export default async function HomePage() {
   const premiere = await getUpcomingPremiere()
@@ -201,7 +202,7 @@ export default async function HomePage() {
               <div className={`flex items-center justify-between pb-3 mb-3 border-b border-dashed ${showYellowCard ? 'border-[#000000] border-opacity-30' : 'border-[#FFFFFF] border-opacity-30'}`}>
                 <span className={`text-[12px] uppercase tracking-tight ${showYellowCard ? 'text-[#000000]' : 'text-[#FFFFFF]'}`} style={{ fontFamily: 'Spline Sans Mono, monospace', lineHeight: '16px', letterSpacing: '-4%' }}>DATE</span>
                 <span className={`text-[16px] uppercase tracking-tight ${showYellowCard ? 'text-[#000000]' : 'text-[#FFFFFF]'}`} style={{ fontFamily: 'Spline Sans Mono, monospace', lineHeight: '28px', letterSpacing: '-4%' }}>
-                  {format(premiereDate, 'MMMM d, yyyy').toUpperCase()} #
+                  <LocalTime isoString={premiere.premiere_date} formatString="MMMM d, yyyy" uppercase /> #
                 </span>
               </div>
 
@@ -209,7 +210,7 @@ export default async function HomePage() {
               <div className={`flex items-center justify-between pb-3 mb-3 border-b border-dashed ${showYellowCard ? 'border-[#000000] border-opacity-30' : 'border-[#FFFFFF] border-opacity-30'}`}>
                 <span className={`text-[12px] uppercase tracking-tight ${showYellowCard ? 'text-[#000000]' : 'text-[#FFFFFF]'}`} style={{ fontFamily: 'Spline Sans Mono, monospace', lineHeight: '16px', letterSpacing: '-4%' }}>TIME</span>
                 <span className={`text-[16px] tracking-tight ${showYellowCard ? 'text-[#000000]' : 'text-[#FFFFFF]'}`} style={{ fontFamily: 'Spline Sans Mono, monospace', lineHeight: '28px', letterSpacing: '-4%' }}>
-                  {format(premiereDate, 'h:mm a')} #
+                  <LocalTime isoString={premiere.premiere_date} formatString="h:mm a" /> #
                 </span>
               </div>
 
