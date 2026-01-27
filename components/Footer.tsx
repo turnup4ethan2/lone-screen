@@ -1,6 +1,8 @@
 import Link from 'next/link'
 
 export default function Footer() {
+  const year = new Date().getFullYear()
+
   return (
     <footer className="mt-auto bg-[#F2F0EA]">
       <div className="mx-auto max-w-6xl px-6 py-6 sm:px-8 lg:px-12">
@@ -9,7 +11,7 @@ export default function Footer() {
             className="text-[12px] text-[#000000]"
             style={{ fontFamily: 'Spline Sans Mono, monospace', lineHeight: '16px', letterSpacing: '-4%' }}
           >
-            2025, The Lone Screen © All Rights Reserved.
+            {year}, The Lone Screen © All Rights Reserved.
           </p>
           <div className="flex items-center gap-2">
             <Link
